@@ -1,1 +1,0 @@
-. "/home/bathan1/dev/zet/blockchain/build/deactivate_conanbuildenv-release-x86_64.sh"
