@@ -1,17 +1,19 @@
+#include <openssl/types.h>
 #include <string>
 #include <vector>
 
 class Transaction {
 public:
-    std::string sender;
-    std::string recipient;
+    int sender;
+    int recipient;
     double amount;
     long timestamp;
+    std::string hash;
     std::string signature;
     std::string payload;
     bool verified;
 
-    Transaction(std::string from, std::string to, double amt, std::string data);
-    void sign(std::string priv_key);
+    Transaction(int from, int to, double amt, std::string data);
+    void sign(EVP_PKEY *priv_key);
     std::string to_string() const;
 };

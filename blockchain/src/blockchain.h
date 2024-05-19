@@ -20,7 +20,7 @@ public:
     std::string to_string() const;
     Block();
     Block(int idx, std::vector<Transaction> txs, std::string prev_hash);
-    std::string calculate_hash();
+    void assign_hash(std::string hash);
 
 };
 

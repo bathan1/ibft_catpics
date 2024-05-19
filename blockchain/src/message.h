@@ -24,9 +24,9 @@ public:
     int sender; // The process id of the node that sent the message
     std::string signature; // The signature of that sender using their private key
 
+    Message(MessageType typ, int cn, int rn, Block &val, int pi);
     std::string to_string() const;
-    Message(MessageType typ, int cn, int rn, Block &val, int pi, RSA *priv_key);
-    std::string sign();
+    void sign(std::string hash, EVP_PKEY *priv_key);
 private:
 };
 
