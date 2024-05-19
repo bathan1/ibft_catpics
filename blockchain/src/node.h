@@ -24,7 +24,8 @@ public:
     Node(int pid, const Blockchain &bc);
     void broadcast(const Message &msg) const;
     void receive(const Message &msg);
-    void run(); 
+    void run();
+    bool verify_message(const Message &msg) const;
 
     int f;
     int n;
@@ -40,8 +41,6 @@ public:
     std::function<bool(const Block&)> beta;
     void decide(const Block &block);
 
-    std::string compute_hash(const std::string &data) const;
-    bool verify_signature(const std::string &hash, const std::string &signature, int sender_id);
     int leader(int lambda, int r_i);
     void start(int lambda, Block value);
     void set_timer();
@@ -50,4 +49,8 @@ public:
     bool justify_preprepare(Message &msg);
     bool validate_message(Message &msg);
     std::chrono::steady_clock::time_point t(int ri);
+
+private:
+    std::string compute_hash(const std::string &data) const;
+    bool verify_signature(const std::string &hash, const std::string &signature, int sender_id) const;
 };
