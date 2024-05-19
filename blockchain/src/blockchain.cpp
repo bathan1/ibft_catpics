@@ -1,9 +1,5 @@
 #include "blockchain.h"
-#include <cmath>
-#include <openssl/obj_mac.h>
-#include <openssl/rsa.h>
-#include <openssl/sha.h>
-#include <openssl/evp.h>
+#include "crypto_utils.h"
 #include <sstream>
 
 Block::Block(): index(-1), previous_hash(""), hash("") {}
@@ -25,7 +21,11 @@ void Block::assign_hash(std::string hash) {
 }
 
 Blockchain::Blockchain(std::string initial_data) {
-    Block genesis(0, {}, NULL);
+    Block genesis(0, {}, "NULL");
+    std::string serialized = genesis.to_string();
+    std::string hash = calculate_sha256(serialized);
+    genesis.assign_hash(hash);
+    chain.push_back(genesis);
 }
 
 void Blockchain::add_block(Block b) {

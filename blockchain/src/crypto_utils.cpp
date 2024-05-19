@@ -102,7 +102,7 @@ std::pair<EVP_PKEY *, EVP_PKEY *> generate_RSA_keypair() {
     return {pubkey, pkey};
 }
 
-bool verify_signature(const std::string &hash, const std::string &signature, EVP_PKEY *pub_key) {
+bool verify(const std::string &hash, const std::string &signature, EVP_PKEY *pub_key) {
     EVP_MD_CTX *ctx = EVP_MD_CTX_new();
     if (ctx == nullptr)
         return false;
