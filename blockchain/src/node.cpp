@@ -4,6 +4,7 @@
 #include <iostream>
 #include <pthread.h>
 #include <queue>
+#include <thread>
 
 Node::Node(int pid, const Blockchain &bc, int max_faulty): pi(pid), blockchain(bc), f(max_faulty), timer(STOPPED), t0(1), n((3 * max_faulty) + 1) {}
 
@@ -166,8 +167,11 @@ bool Node::check_expired() {
 }
 
 void Node::handle_timeout() {
-    this->r++;
+    r++;
     set_timer(RUNNING, this->r);
+    Message roundchange(ROUND_CHANGE, this->lambda, this->r, this->pr, this->pv, this->pi);
+    sign_message(roundchange);
+    broadcast(roundchange); 
 }
 
 void Node::run() {
@@ -175,7 +179,7 @@ void Node::run() {
         bool expired = this->check_expired();
         if (expired) {
             std::cout << "node " << pi << " timed out" << std::endl;
-            return;
+            handle_timeout();
         }
         pthread_mutex_lock(&queue_mutex);
         while (message_queue.empty()) {
