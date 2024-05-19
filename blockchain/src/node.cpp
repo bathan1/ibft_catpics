@@ -77,10 +77,6 @@ int Node::receive(const Message &msg) {
             }
             return 0;
         case PREPARE:
-            if (valid_msg) {
-                this->valid_prepare_msgs[msg.ri].push_back(msg);
-                std::cout << pi << " has valid prepare msg count of " << valid_prepare_msgs[msg.ri].size() << " with the addition of node" << msg.sender << "'s prepare msg" << std::endl;
-            }
             if (this->round_stage[msg.ri] == 1 && has_quorum(msg.ri, PREPARE)) {
                 pr_i = msg.ri;
                 pv_i = msg.value;
@@ -90,14 +86,22 @@ int Node::receive(const Message &msg) {
                 this->broadcast(commit);
                 return 2;
             } 
+            if (valid_msg) {
+                this->valid_prepare_msgs[msg.ri].push_back(msg);
+                std::cout << pi << " has valid prepare msg count of " << valid_prepare_msgs[msg.ri].size() << " with the addition of node" << msg.sender << "'s prepare msg" << std::endl;
+            }
             return 1;
         case COMMIT:
+            std::cout << "received a commit message!" << std::endl;
             if (this->round_stage[msg.ri] == 2 && has_quorum(msg.ri, COMMIT)) {
                 this->round_stage[msg.ri] = 3;
                 decide(msg.value);
                 return 3;
             }
-            break;
+            if (valid_msg) {
+                this->valid_commit_count[msg.ri]++;
+            }
+            return 2;
     }
     return 4;
 }
@@ -106,6 +110,7 @@ void Node::run() {
     while (true) {
         pthread_mutex_lock(&queue_mutex);
         while (message_queue.empty()) {
+            // deadlock here
             pthread_cond_wait(&queue_cond, &queue_mutex);
         }
         Message msg = message_queue.front();
