@@ -1,10 +1,9 @@
 #ifndef MESSAGE_H
 #define MESSAGE_H
 
+#include "blockchain.h"
 #include <openssl/types.h>
 #include <string>
-
-class Block;
 
 enum MessageType {
     ROUND_CHANGE,
@@ -16,15 +15,16 @@ enum MessageType {
 class Message {
 public:
     MessageType type;
-    int lambda_i;
-    int ri;
-    Block &value;
-    int pr_j;
-    int pv_j;
+    int consensus_number;
+    int round;
+    Block value;
+    int prepared_round;
+    Block prepared_value;
     int sender; // The process id of the node that sent the message
     std::string signature; // The signature of that sender using their private key
 
-    Message(MessageType typ, int cn, int rn, Block &val, int pi);
+    Message(MessageType typ, int lambda, int r, Block val, int pi);
+    Message(MessageType typ, int lambda, int r, int pr, Block pv, int pi);
     std::string to_string() const;
     void sign(std::string hash, EVP_PKEY *priv_key);
 private:

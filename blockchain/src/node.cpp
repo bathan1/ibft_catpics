@@ -1,11 +1,14 @@
 #include "node.h"
 #include "crypto_utils.h"
+#include <cmath>
 #include <iostream>
 #include <pthread.h>
 
-Node::Node(int pid, const Blockchain &bc, int max_faulty): pi(pid), blockchain(bc), f(max_faulty) {}
+Node::Node(int pid, const Blockchain &bc, int max_faulty): pi(pid), blockchain(bc), f(max_faulty), timer(STOPPED), t0(1), n((3 * max_faulty) + 1) {}
 
-Node::Node(int pid, const Blockchain &bc, int max_faulty, int num_nodes): pi(pid), blockchain(bc), f(max_faulty), n(num_nodes) {}
+Node::Node(int pid, const Blockchain &bc, int max_faulty, int num_nodes): pi(pid), blockchain(bc), f(max_faulty), n(num_nodes), timer(STOPPED), t0(1) {}
+
+Node::Node(int pid, const Blockchain &bc, int max_faulty, int num_nodes, int timer_constant): pi(pid), blockchain(bc), f(max_faulty), n(num_nodes), timer(STOPPED), t0(timer_constant) {}
 
 Node::~Node() {
     pthread_mutex_destroy(&queue_mutex);
@@ -58,7 +61,7 @@ bool Node::has_quorum(int ri, MessageType msgtyp) {
 }
 
 bool Node::justify_preprepare(const Message &msg) const {
-    if (msg.ri == 1) {
+    if (msg.round == 1) {
         return true;
     }
     return false;
@@ -72,25 +75,28 @@ void Node::decide(const Block &block) {
 int Node::receive(const Message &msg) {
     bool valid_msg = verify_message(msg);
     switch (msg.type) {
+        case ROUND_CHANGE:
+            std::cout << "rc" << std::endl;
+            return 4;
         case PRE_PREPARE:
             if (valid_msg && justify_preprepare(msg)) {
-                Message prepare(PREPARE, msg.lambda_i, msg.ri, msg.value, this->pi);
+                Message prepare(PREPARE, msg.consensus_number, msg.round, msg.value, this->pi);
                 this->sign_message(prepare);
+                this->set_timer(RUNNING, msg.round);
                 this->broadcast(prepare);
-                this->round_stage[msg.ri] = 1;
+                this->round_stage[msg.round] = 1;
                 return 1;
             }
             return 0;
 
         case PREPARE:
-            if (valid_msg) {
-                this->valid_prepare_msgs[msg.ri].push_back(msg);
-            }
-            if (this->round_stage[msg.ri] == 1 && has_quorum(msg.ri, PREPARE)) {
-                pr_i = msg.ri;
-                pv_i = msg.value;
-                Message commit(COMMIT, msg.lambda_i, msg.ri, msg.value, this->pi);
-                this->round_stage[msg.ri] = 2;
+            if (valid_msg)
+                this->valid_prepare_msgs[msg.round].push_back(msg);
+            if (this->round_stage[msg.round] == 1 && has_quorum(msg.round, PREPARE)) {
+                this->pr = msg.round;
+                this->pv = msg.value;
+                Message commit(COMMIT, msg.consensus_number, msg.round, msg.value, this->pi);
+                this->round_stage[msg.round] = 2;
                 this->sign_message(commit);
                 this->broadcast(commit);
                 return 2;
@@ -98,11 +104,11 @@ int Node::receive(const Message &msg) {
             return 1;
 
         case COMMIT:
-            if (valid_msg) {
-                this->valid_commit_count[msg.ri]++;
-            }
-            if (this->round_stage[msg.ri] == 2 && has_quorum(msg.ri, COMMIT)) {
-                this->round_stage[msg.ri] = 3;
+            if (valid_msg)
+                this->valid_commit_count[msg.round]++;
+            if (this->round_stage[msg.round] == 2 && has_quorum(msg.round, COMMIT)) {
+                this->round_stage[msg.round] = 3;
+                this->set_timer(STOPPED, 0);
                 decide(msg.value);
                 return 3;
             }
@@ -111,8 +117,38 @@ int Node::receive(const Message &msg) {
     return 4;
 }
 
+void Node::set_timer(TimerState state, int ri) {
+    this->timer = state;
+    if (state == RUNNING)
+        set_expiration(ri);
+}
+
+void Node::set_expiration(int ri) {
+    std::chrono::seconds timeout = t(ri);
+    auto now = std::chrono::steady_clock::now();
+    this->expiration_time = now + timeout;
+}
+
+std::chrono::seconds Node::t(int ri) const {
+    return std::chrono::seconds(static_cast<int>(t0 * std::pow(2, ri)));
+}
+
+bool Node::check_expired() {
+    return std::chrono::steady_clock::now() >= this->expiration_time;
+}
+
+void Node::handle_timeout() {
+    this->r++;
+    set_timer(RUNNING, this->r);
+}
+
 void Node::run() {
     while (true) {
+        bool expired = this->check_expired();
+        if (expired) {
+            std::cout << "node " << pi << " timed out" << std::endl;
+            return;
+        }
         pthread_mutex_lock(&queue_mutex);
         while (message_queue.empty()) {
             pthread_cond_wait(&queue_cond, &queue_mutex);
@@ -122,7 +158,7 @@ void Node::run() {
         pthread_mutex_unlock(&queue_mutex);
 
         int result = receive(msg);
-        if (result == 3) {
+        if (result >= 3) {
             return;
         }
     }

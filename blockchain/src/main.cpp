@@ -17,20 +17,20 @@ struct WorkerArgs {
 void *worker(void *arg) {
     WorkerArgs *args = static_cast<WorkerArgs *>(arg);
     Node *node = args->node;
-    node->lambda_i = args->lambda;
-    node->ri = 1;
-    node->pr_i = -1;
-    node->pv_i = Block();
-    node->inputvalue_i = *(args->value);
+    node->lambda = args->lambda;
+    node->r = 1;
+    node->pr = -1;
+    node->pv = Block();
+    node->input_value = *(args->value);
 
     if (node->pi == 0) {
-        Message preprepare(PRE_PREPARE, 1, 1, node->inputvalue_i, 0);
+        Message preprepare(PRE_PREPARE, node->lambda, node->r, node->input_value, 0);
         node->sign_message(preprepare);
         node->broadcast(preprepare);
         node->round_stage[1] = 1;
         std::cout << "leader just broadcasted the preprepare message" << std::endl;
     }
-
+    node->set_timer(RUNNING, node->r);
     node->run();
     return nullptr;
 }
@@ -84,6 +84,14 @@ int main(int argc, char **argv) {
     for (int i = 0; i < n; i++) {
         pthread_join(threads[i], nullptr);
     }
+
+    int numstopped = 0;
+    for (int i = 0; i < n; i++) {
+        if (network[i]->timer == STOPPED) {
+            numstopped++;
+        }
+    }
+    std::cout << "num_stopped=" << numstopped << std::endl;
 
     // cleanup
     for (int i = 0; i < worker_args.size(); i++)
