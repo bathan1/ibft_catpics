@@ -77,6 +77,7 @@ int main(int argc, char **argv) {
     for (int i = 0; i < n; i++) {
         WorkerArgs *args = new WorkerArgs();
         *(args) = { network[i], bc.chain.size(), &proposed };
+        worker_args.push_back(args);
         pthread_create(&threads[i], nullptr, worker, args);
     }
     
@@ -85,9 +86,8 @@ int main(int argc, char **argv) {
     }
 
     // cleanup
-    for (int i = 0; i < worker_args.size(); i++) {
+    for (int i = 0; i < worker_args.size(); i++)
         delete worker_args[i];
-    }
     for (auto &pair : public_keys)
         EVP_PKEY_free(pair.second);
     for (int i = 0; i < network.size(); i++) {

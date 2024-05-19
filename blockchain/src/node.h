@@ -38,16 +38,16 @@ public:
     Block pv_i;
     Block inputvalue_i;
     TimerState timer;
-    std::chrono::steady_clock::time_point expiration_time;
+    // std::chrono::steady_clock::time_point expiration_time;
     void decide(const Block &block);
 
     int leader(int lambda, int r_i);
     void start(int lambda, Block value);
-    void set_timer();
+    // void set_timer();
     bool has_quorum(int ri, MessageType msgtyp);
     bool justify_round_change();
     bool validate_message(const Message &msg);
-    std::chrono::steady_clock::time_point t(int ri);
+    // std::chrono::steady_clock::time_point t(int ri);
     std::unordered_map<int, int> round_stage;
 
 private:

@@ -8,7 +8,7 @@
 // Doesn't sign the message; must do so explicitly
 Message::Message(MessageType typ, int cn, int rn, Block &val, int pi):
     type(typ), lambda_i(cn), 
-    ri(rn), value(val), sender(pi), signature("") {}
+    ri(rn), value(val), sender(pi), signature(""), pr_j(-1), pv_j(-1) {}
 
 // Message serialization to basic string
 std::string Message::to_string() const {
