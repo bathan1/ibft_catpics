@@ -1,7 +1,6 @@
 #include "blockchain.h"
 #include "message.h"
 #include <queue>
-#include <set>
 #include <unordered_map>
 #include <vector>
 
@@ -45,7 +44,6 @@ public:
     void start(int lambda, Block value);
     void set_timer(TimerState state, int ri);
     bool check_expired();
-    bool has_quorum(int ri, MessageType msgtyp);
     bool justify_round_change();
     bool validate_message(const Message &msg);
     std::unordered_map<int, int> round_stage;
@@ -60,7 +58,11 @@ private:
     std::unordered_map<int, std::vector<Message>> valid_prepare_msgs;
     std::unordered_map<int, int> valid_commit_count;
     std::unordered_map<int, std::vector<Message>> valid_roundchange_msgs;
+    std::unordered_map<int, int> valid_roundchange_count;
     std::string compute_hash(const std::string &data) const;
+    bool has_quorum(int ri, MessageType msgtyp);
+    int check_skip_round() const;
+    void handle_skip_round(int r_min);
     bool verify_signature(const std::string &hash, const std::string &signature, int sender_id) const;
     bool justify_preprepare(const Message &msg) const;
 };

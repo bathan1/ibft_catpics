@@ -3,6 +3,7 @@
 #include <cmath>
 #include <iostream>
 #include <pthread.h>
+#include <queue>
 
 Node::Node(int pid, const Blockchain &bc, int max_faulty): pi(pid), blockchain(bc), f(max_faulty), timer(STOPPED), t0(1), n((3 * max_faulty) + 1) {}
 
@@ -67,6 +68,27 @@ bool Node::justify_preprepare(const Message &msg) const {
     return false;
 }
 
+int Node::check_skip_round() const {
+    std::priority_queue<int> pq;
+    for (auto it = valid_roundchange_count.cbegin(); it != valid_roundchange_count.cend(); it++) {
+        if (it->first > this->r) {
+            pq.push(it->first);
+        }
+    }
+    if (pq.size() >= f + 1) {
+        return pq.top();
+    }
+    return -1;
+}
+
+void Node::handle_skip_round(int r_min) {
+    this->r = r_min;
+    this->set_timer(RUNNING, this->r);
+    Message rc(ROUND_CHANGE, this->lambda, this->r, this->pr, this->pv, this->pi);
+    this->sign_message(rc);
+    this->broadcast(rc);
+}
+
 void Node::decide(const Block &block) {
     this->blockchain.add_block(block);
     std::cout << "Node " << pi << " just added the block to its blockchain!" << std::endl;
@@ -76,7 +98,13 @@ int Node::receive(const Message &msg) {
     bool valid_msg = verify_message(msg);
     switch (msg.type) {
         case ROUND_CHANGE:
-            std::cout << "rc" << std::endl;
+            if (valid_msg) {
+                this->valid_roundchange_count[msg.round]++;
+            }
+            if (check_skip_round() != -1) {
+                int rmin = check_skip_round();
+                handle_skip_round(rmin);
+            }
             return 4;
         case PRE_PREPARE:
             if (valid_msg && justify_preprepare(msg)) {
@@ -158,7 +186,7 @@ void Node::run() {
         pthread_mutex_unlock(&queue_mutex);
 
         int result = receive(msg);
-        if (result >= 3) {
+        if (result == 3) {
             return;
         }
     }
