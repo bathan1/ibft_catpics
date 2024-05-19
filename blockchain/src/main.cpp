@@ -1,6 +1,7 @@
 #include "crypto_utils.h"
 #include "blockchain.h"
 #include "node.h"
+#include <cstdlib>
 #include <iostream>
 #include <openssl/evp.h>
 #include <pthread.h>
@@ -9,9 +10,7 @@
 
 void *worker(void *arg) {
     Node *node = static_cast<Node *>(arg);
-    if (node->pi != 0) {
-        node->run();
-    }
+    node->run();
     return nullptr;
 }
 
@@ -20,7 +19,9 @@ int main(int argc, char **argv) {
         std::cout << "Usage:" << " " << argv[0] << " " << "<number_of_nodes>" << std::endl;
         return 1;
     }
+    // ibft can tolerate up to 3f + 1 faulty nodes
     int n = std::atoi(argv[1]);
+    int f = (n - 1) / 3;
 
     // Initialize the blockchain
     Blockchain bc("meow");
@@ -28,9 +29,10 @@ int main(int argc, char **argv) {
     std::unordered_map<int, EVP_PKEY *> public_keys;
     std::vector<Node *> network;
     std::vector<pthread_t> threads(n);
+
     // Initialize the n nodes
     for (int i = 0; i < n; i++) {
-        Node *node = new Node(i, bc);
+        Node *node = new Node(i, bc, f);
         network.push_back(node);
         auto [pubkey, privkey] = generate_RSA_keypair();
         public_keys[i] = pubkey;
@@ -42,18 +44,18 @@ int main(int argc, char **argv) {
         network[i]->public_keys = public_keys;
     }
 
-    for (int i = 1; i < n; i++) {
+    for (int i = 0; i < n; i++) {
         pthread_create(&threads[i], nullptr, worker, network[i]);
     }
+    
+    Node *leader = network[0];
+    Block proposed(bc.chain.size(), {}, bc.chain[0].hash);
+    Message preprepare(PRE_PREPARE, 1, 1, proposed, 0);
+    leader->sign_message(preprepare);
+    leader->broadcast(preprepare);
+    std::cout << "Leader just broadcasted the preprepare message!" << std::endl;
 
-    Block random_block(bc.chain.size(), {}, bc.chain[0].hash);
-    Message msg(PREPARE, 1, 1, random_block, 0);
-    std::string serialized = msg.to_string();
-    std::string hash = calculate_sha256(serialized);
-    msg.sign(hash, network[0]->private_key);
-    network[0]->broadcast(msg);
-
-    for (int i = 1; i < n; i++) {
+    for (int i = 0; i < n; i++) {
         pthread_join(threads[i], nullptr);
     }
 

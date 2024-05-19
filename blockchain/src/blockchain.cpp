@@ -21,7 +21,7 @@ void Block::assign_hash(std::string hash) {
 }
 
 Blockchain::Blockchain(std::string initial_data) {
-    Block genesis(0, {}, "NULL");
+    Block genesis(0, {}, initial_data);
     std::string serialized = genesis.to_string();
     std::string hash = calculate_sha256(serialized);
     genesis.assign_hash(hash);
