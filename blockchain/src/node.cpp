@@ -14,7 +14,12 @@ Node::~Node() {
 
 void Node::broadcast(const Message &msg) const {
     for (Node *node : network) {
-        if (node->pi != this->pi) {
+        if (msg.type == PRE_PREPARE) {
+            pthread_mutex_lock(&node->queue_mutex);
+            node->message_queue.push(msg);
+            pthread_cond_signal(&node->queue_cond);
+            pthread_mutex_unlock(&node->queue_mutex);
+        } else if (node->pi != this->pi) {
             pthread_mutex_lock(&node->queue_mutex);
             node->message_queue.push(msg);
             pthread_cond_signal(&node->queue_cond);
@@ -44,10 +49,10 @@ bool Node::verify_message(const Message &msg) const {
 
 bool Node::has_quorum(int ri, MessageType msgtyp) {
     if (msgtyp == PREPARE) {
-        return valid_prepare_msgs[ri].size() >= f + 1;
+        return valid_prepare_msgs[ri].size() >= ((n + f) / 2) + 1;
     }  
     if (msgtyp == COMMIT) {
-        return valid_commit_count[ri] >= f + 1;
+        return valid_commit_count[ri] >= ((n + f) / 2) + 1;
     }
     return false;
 }
@@ -72,14 +77,12 @@ int Node::receive(const Message &msg) {
                 Message prepare(PREPARE, msg.lambda_i, msg.ri, msg.value, this->pi);
                 this->sign_message(prepare);
                 this->broadcast(prepare);
-                std::cout << pi << " just broadcasted its prepare message" << std::endl;
                 this->round_stage[msg.ri] = 1;
                 return 1;
             }
             return 0;
 
         case PREPARE:
-            std::cout << pi << " received a prepare message from " << msg.sender << std::endl;
             if (valid_msg) {
                 this->valid_prepare_msgs[msg.ri].push_back(msg);
             }
