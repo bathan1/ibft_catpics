@@ -1,6 +1,7 @@
 #include "blockchain.h"
 #include "message.h"
 #include <queue>
+#include <set>
 #include <unordered_map>
 #include <vector>
 
@@ -38,7 +39,6 @@ public:
     Block inputvalue_i;
     TimerState timer;
     std::chrono::steady_clock::time_point expiration_time;
-    int leaderpi;
     void decide(const Block &block);
 
     int leader(int lambda, int r_i);
@@ -48,11 +48,12 @@ public:
     bool justify_round_change();
     bool validate_message(const Message &msg);
     std::chrono::steady_clock::time_point t(int ri);
+    std::unordered_map<int, int> round_stage;
 
 private:
     std::unordered_map<int, std::vector<Message>> valid_prepare_msgs;
     std::unordered_map<int, int> valid_commit_count;
-    std::unordered_map<int, const std::vector<Message>> valid_roundchange_msgs;
+    std::unordered_map<int, std::vector<Message>> valid_roundchange_msgs;
     std::string compute_hash(const std::string &data) const;
     bool verify_signature(const std::string &hash, const std::string &signature, int sender_id) const;
     bool justify_preprepare(const Message &msg) const;

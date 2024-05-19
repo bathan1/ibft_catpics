@@ -64,41 +64,42 @@ void Node::decide(const Block &block) {
 }
 
 int Node::receive(const Message &msg) {
-    bool valid = verify_message(msg);
+    bool valid_msg = verify_message(msg);
     switch (msg.type) {
         case PRE_PREPARE:
-            if (valid && justify_preprepare(msg)) {
+            if (valid_msg && justify_preprepare(msg)) {
                 Message prepare(PREPARE, msg.lambda_i, msg.ri, msg.value, this->pi);
                 this->sign_message(prepare);
                 this->broadcast(prepare);
+                std::cout << pi << " just broadcasted its prepare message" << std::endl;
+                this->round_stage[msg.ri] = 1;
                 return 1;
             }
             return 0;
         case PREPARE:
-            if (valid) {
-                valid_prepare_msgs[msg.ri].push_back(msg);
+            if (valid_msg) {
+                this->valid_prepare_msgs[msg.ri].push_back(msg);
+                std::cout << pi << " has valid prepare msg count of " << valid_prepare_msgs[msg.ri].size() << " with the addition of node" << msg.sender << "'s prepare msg" << std::endl;
             }
-            if (has_quorum(msg.ri, PREPARE)) {
+            if (this->round_stage[msg.ri] == 1 && has_quorum(msg.ri, PREPARE)) {
                 pr_i = msg.ri;
                 pv_i = msg.value;
                 Message commit(COMMIT, msg.lambda_i, msg.ri, msg.value, this->pi);
+                this->round_stage[msg.ri] = 2;
                 this->sign_message(commit);
                 this->broadcast(commit);
-                std::cout << "node " << pi << " broadcasted commit message" << std::endl;
                 return 2;
             } 
             return 1;
         case COMMIT:
-            if (valid) {
-            }
-            if (has_quorum(msg.ri, COMMIT)) {
+            if (this->round_stage[msg.ri] == 2 && has_quorum(msg.ri, COMMIT)) {
+                this->round_stage[msg.ri] = 3;
                 decide(msg.value);
                 return 3;
             }
             break;
-        default:
-            return -1;
     }
+    return 4;
 }
 
 void Node::run() {
@@ -107,13 +108,13 @@ void Node::run() {
         while (message_queue.empty()) {
             pthread_cond_wait(&queue_cond, &queue_mutex);
         }
-
         Message msg = message_queue.front();
         message_queue.pop();
         pthread_mutex_unlock(&queue_mutex);
 
-        if (receive(msg) == 3) {
-            break;
+        int result = receive(msg);
+        if (result == 3) {
+            return;
         }
     }
 }
