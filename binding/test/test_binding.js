@@ -1,2 +1,3 @@
-const HelloWorld = require("../lib/binding.js");
-HelloWorld("lol");
+const startSimulation = require("../lib/binding.js");
+
+startSimulation(5, 1);

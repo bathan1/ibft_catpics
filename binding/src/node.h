@@ -12,7 +12,9 @@ enum TimerState {
 
 class Node {
 public:
-    int pi;
+    Node(int pid, const Blockchain &bc, int num_nodes);
+    ~Node();
+
     Blockchain blockchain;
     std::vector<Node *> network;
     EVP_PKEY *private_key;
@@ -21,24 +23,23 @@ public:
     mutable pthread_mutex_t queue_mutex = PTHREAD_MUTEX_INITIALIZER;
     pthread_cond_t queue_cond = PTHREAD_COND_INITIALIZER;
 
-    Node(int pid, const Blockchain &bc, int num_nodes);
-    Node(int pid, const Blockchain &bc, int num_nodes, int num_faulty);
-    ~Node();
+    int pi;
+    int n;
+    int f;
+    int lambda;
+    int r; 
+    int pr;
+    Block pv;
+    bool faulty;
+    Block input_value;
+    int t0;
+    TimerState timer;
+
     void broadcast(const Message &msg) const;
     int receive(const Message &msg);
     void run();
     void sign_message(Message &msg) const;
     bool verify_message(const Message &msg) const;
-
-    int f;
-    int n;
-    int lambda;
-    int r, pr;
-    Block pv;
-    Block input_value;
-    TimerState timer;
-    bool faulty;
-
     void decide(const Block &block);
     int leader(int lambda, int r_i);
     void start(int lambda, Block value);
@@ -50,8 +51,7 @@ public:
     std::unordered_map<int, int> round_stage;
 
 private:
-    int t0;
-
+    int leader();
     void handle_timeout();
     void set_expiration(int ri);
     std::chrono::seconds t(int ri) const;

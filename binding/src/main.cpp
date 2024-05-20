@@ -19,8 +19,6 @@ void *worker(void *arg) {
     Node *node = args->node;
     node->lambda = args->lambda;
     node->r = 1;
-    node->pr = -1;
-    node->pv = Block();
     node->input_value = *(args->value);
 
     if (node->pi == 0) {
@@ -71,7 +69,6 @@ int main(int argc, char **argv) {
         node->private_key = privkey;
     }
 
-    int num_faulty = 0; 
     // Initialize faulty nodes
     for (int i = 0; i < actual_f; i++) {
         int random = rand() % network.size();

@@ -6,12 +6,18 @@
 #include <queue>
 
 Node::Node(int pid, const Blockchain &bc, int num_nodes): 
-    pi(pid), blockchain(bc), 
-    n(num_nodes), f((num_nodes - 1) / 3), 
-    timer(STOPPED), t0(1), 
-    faulty(false) {}
-
-Node::Node(int pid, const Blockchain &bc, int max_faulty, int num_nodes): pi(pid), blockchain(bc), f(max_faulty), n(num_nodes), timer(STOPPED), t0(1), faulty(false) {}
+    blockchain(bc),
+    pi(pid), 
+    n(num_nodes),
+    f((num_nodes - 1) / 3),
+    lambda(-1),
+    r(-1),
+    pr(-1),
+    pv(Block()),
+    faulty(false),
+    input_value(Block()),
+    t0(1),
+    timer(STOPPED) {}
 
 Node::~Node() {
     pthread_mutex_destroy(&queue_mutex);
@@ -117,9 +123,8 @@ int Node::receive(const Message &msg) {
     bool valid_msg = verify_message(msg);
     switch (msg.type) {
         case ROUND_CHANGE:
-            if (valid_msg) {
+            if (valid_msg)
                 this->valid_roundchange_count[msg.round]++;
-            }
             if (check_skip_round() != -1) {
                 int rmin = check_skip_round();
                 handle_skip_round(rmin);
@@ -128,24 +133,26 @@ int Node::receive(const Message &msg) {
         case PRE_PREPARE:
             if (valid_msg && justify_preprepare(msg)) {
                 Message prepare(PREPARE, msg.consensus_number, msg.round, msg.value, this->pi);
+                this->round_stage[msg.round] = 1;
+                this->valid_prepare_msgs[msg.round].push_back(prepare);
                 if (!faulty) {
                     this->sign_message(prepare);
                 }
                 this->set_timer(RUNNING, msg.round);
                 this->broadcast(prepare);
-                this->round_stage[msg.round] = 1;
                 return 1;
             }
             return 0;
         case PREPARE:
-            if (valid_msg)
-                std::cout << pi << " got a valid message from " << msg.sender << "\n";
+            if (valid_msg) {
                 this->valid_prepare_msgs[msg.round].push_back(msg);
+            }
             if (this->round_stage[msg.round] == 1 && has_quorum(msg.round, PREPARE)) {
                 this->pr = msg.round;
                 this->pv = msg.value;
                 Message commit(COMMIT, msg.consensus_number, msg.round, msg.value, this->pi);
                 this->round_stage[msg.round] = 2;
+                this->valid_commit_count[msg.round]++;
                 if (!faulty) {
                     this->sign_message(commit);
                 }
@@ -195,6 +202,10 @@ void Node::handle_timeout() {
     broadcast(roundchange); 
 }
 
+int Node::leader() {
+    return (lambda + r) % n;
+}
+
 void Node::run() {
     while (true) {
         bool expired = this->check_expired();
@@ -211,7 +222,8 @@ void Node::run() {
         pthread_mutex_unlock(&queue_mutex);
 
         int result = receive(msg);
-        if (result == 3) {
+        // Support just 1 round right now
+        if (result >= 3) {
             return;
         }
     }

@@ -2,14 +2,19 @@
 #include "crypto_utils.h"
 #include <sstream>
 
-Block::Block(): index(-1), transactions({}), previous_hash(""), hash(""), timestamp(time(nullptr)) {}
+Block::Block(): 
+    index(-1), 
+    timestamp(time(nullptr)),
+    transactions({}), 
+    previous_hash(""), 
+    hash("") {}
 
 Block::Block(int idx, std::vector<Transaction> txs, std::string prev_hash): 
-    index(idx), 
+    index(idx),
+    timestamp(time(nullptr)),
     transactions(txs), 
-    previous_hash(prev_hash) {
-    timestamp = time(nullptr);
-}
+    previous_hash(prev_hash),
+    hash("") {}
 
 std::string Block::to_string() const {
     std::stringstream ss;
