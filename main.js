@@ -5,13 +5,16 @@ const path = require("path");
 const app = express();
 app.use(express.json());
 const port = process.env.PORT || 3000;
+app.use(express.static(path.join(__dirname, "client/dist")));
 
-app.use(express.static(path.join(__dirname, "webapp/dist")));
+app.get("*", (req, res) => {
+    return res.sendFile(path.join(__dirname, "client/dist", "index.html"));
+});
 
 app.post("/simulation", (req, res) => {
-    const { numNodes, numFaulty, hash } = req.body;
+    const { numNodes, numFaulty, data } = req.body;
     try {
-        const log = startSimulation(numNodes, numFaulty, hash);
+        const log = startSimulation(numNodes, numFaulty, data);
         console.log("ran sim!");
         return res.status(200).json({ log });
     } catch (err) {
