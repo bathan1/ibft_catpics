@@ -4,9 +4,8 @@
   "description": "",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "cd webapp && pnpm build && ls",
     "start": "node main.js",
-    "heroku-postbuild": "cd binding && pnpm install && npx node-gyp configure && npx node-gyp build"
+    "heroku-postbuild": "cd webapp && pnpm build && cd ../binding && pnpm install && npx node-gyp configure && npx node-gyp build"
   },
   "keywords": [],
   "author": "",
