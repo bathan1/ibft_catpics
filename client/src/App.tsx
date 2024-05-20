@@ -1,7 +1,14 @@
-import ReactFlow, { Node } from "reactflow";
+import ReactFlow, { Edge, Node } from "reactflow";
 import { useState, useEffect, FormEvent } from "react";
 import "reactflow/dist/style.css";
 import './App.css';
+
+type LogEntry = {
+    messageType: string,
+    round: number,
+    senderId: string,
+    receiverId: string
+}
 
 const generateNodes = (numNodes: number, faultyNodes: Set<number>): Node[] => {
     const radius = 500;
@@ -32,11 +39,23 @@ const selectRandomFaultyNodes = (numNodes: number, numFaulty: number) => {
     return faultyNodes;
 }
 
+function createEdgesFromLogs(logData: LogEntry[]): Edge[] {
+    return logData.map((log, index) => ({
+        id: `e${log.senderId}-${log.receiverId}-${index}`,
+        source: `${log.senderId}`,
+        target: `${log.receiverId}`,
+        label: log.messageType,
+        animated: true,
+        style: { stroke: log.messageType === "PRE_PREPARE" ? "blue" : log.messageType === "PREPARE" ? "orange" : "purples"}
+    }));
+}
+
 function App() {
     const [numNodes, setNumNodes] = useState(5);
     const [numFaulty, setNumFaulty] = useState(1);
     const [data, setData] = useState("");
     const [nodes, setNodes] = useState<Node[]>(generateNodes(numNodes, new Set()));
+    const [edges, setEdges] = useState<Edge[]>([]);
 
     useEffect(() => {
         const faultyNodes = selectRandomFaultyNodes(numNodes, numFaulty);
@@ -56,6 +75,7 @@ function App() {
         setNumFaulty(Math.min(numFaulty, newMaxFaulty));
     }
 
+
     async function handleSubmit(e: FormEvent) {
         e.preventDefault();
         const response = await fetch("http://localhost:3000/simulation", {
@@ -70,7 +90,8 @@ function App() {
             })
         });
         const payload = await response.json();
-        console.log(payload);
+        const edges = createEdgesFromLogs(payload.log);
+        setEdges(edges);
     }
 
     return (
@@ -103,12 +124,17 @@ function App() {
                 </label>
                 <label htmlFor="data" className="block mb-4">
                     The cat picture you want to own!
-                    <input type="text" id="data"/>
+                    <input 
+                        type="text" 
+                        id="data" 
+                        className="p-2 rounded-lg"
+                        onChange={(e) => setData(e.target.value)}
+                    />
                 </label>
                 <input type="submit" value="submit" className="border px-2 py-1 rounded-lg"/>
             </form>
             <div className="w-full h-full">
-                <ReactFlow nodes={nodes} fitView className="bg-red-100"/>
+                <ReactFlow nodes={nodes} edges={edges} fitView className="bg-red-100"/>
             </div>
         </div>
     );
