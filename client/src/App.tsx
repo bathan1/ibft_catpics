@@ -1,10 +1,29 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
 import './App.css'
 
 function App() {
   const [count, setCount] = useState(0)
+  useEffect(() => {
+      async function runSimulation() {
+          const data = {
+              numNodes: 5,
+              numFaulty: 1,
+              data: "lol"
+          };
+          const response = await fetch("/simulation", {
+              method: "POST",
+              headers: {
+                  "content-type": "application/json"
+              },
+              body: JSON.stringify(data)
+          });
+          const payload = await response.json();
+          console.log(payload);
+      }
+      runSimulation();
+  }, []);
 
   return (
     <>

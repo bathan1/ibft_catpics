@@ -12,13 +12,15 @@ app.get("*", (req, res) => {
 });
 
 app.post("/simulation", (req, res) => {
+    console.log("here!");
+    console.log(req.body);
     const { numNodes, numFaulty, data } = req.body;
     try {
         const log = startSimulation(numNodes, numFaulty, data);
         console.log("ran sim!");
         return res.status(200).json({ log });
     } catch (err) {
-        return res.status(500).send(err.message);
+        return res.status(500).json({ err: err.message });
     }
 });
 
