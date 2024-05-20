@@ -7,13 +7,24 @@
 
 // Doesn't sign the message; must do so explicitly
 Message::Message(MessageType typ, int lambda, int rn, Block val, int pi):
-    type(typ), consensus_number(lambda),
-    round(rn), value(val), sender(pi), signature(""), prepared_round(-1), prepared_value(Block()) {}
+    type(typ), 
+    consensus_number(lambda),
+    round(rn), 
+    value(val),
+    prepared_round(-1),
+    prepared_value(Block()),
+    sender(pi), 
+    signature("") {}
 
 Message::Message(MessageType typ, int lambda, int r, int pr, Block pv, int pi):
-    type(typ), consensus_number(lambda),
-    round(r), value(Block()), prepared_round(pr),
-    prepared_value(pv), sender(pi), signature("") {}
+    type(typ), 
+    consensus_number(lambda),
+    round(r), 
+    value(Block()), 
+    prepared_round(pr),
+    prepared_value(pv), 
+    sender(pi), 
+    signature("") {}
 
 // Message serialization to basic string
 std::string Message::to_string() const {
