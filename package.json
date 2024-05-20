@@ -1,5 +1,19 @@
 {
-	"dependencies": {
-		"express": "^4.19.2"
-	}
+    "name": "ibft_catpics",
+    "version": "1.0.0",
+    "packageManager": "pnpm@9.1.1",
+    "description": "lol",
+    "engines": {
+        "node": "20.x"
+    },
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "build": "cd binding && pnpm install && npx node-gyp configure && npx node-gyp build && cd ../client && pnpm install && pnpm build"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+        "express": "^4.19.2"
+    }
 }

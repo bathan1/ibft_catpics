@@ -339,7 +339,7 @@ endif
 
 quiet_cmd_regen_makefile = ACTION Regenerating $@
 cmd_regen_makefile = cd $(srcdir); /home/bathan1/.nvm/versions/node/v20.10.0/lib/node_modules/node-gyp/gyp/gyp_main.py -fmake --ignore-environment "-Dlibrary=shared_library" "-Dvisibility=default" "-Dnode_root_dir=/home/bathan1/.cache/node-gyp/20.10.0" "-Dnode_gyp_dir=/home/bathan1/.nvm/versions/node/v20.10.0/lib/node_modules/node-gyp" "-Dnode_lib_file=/home/bathan1/.cache/node-gyp/20.10.0/<(target_arch)/node.lib" "-Dmodule_root_dir=/home/bathan1/dev/ibft_catpics/binding" "-Dnode_engine=v8" "--depth=." "-Goutput_dir=." "--generator-output=build" -I/home/bathan1/dev/ibft_catpics/binding/build/config.gypi -I/home/bathan1/.nvm/versions/node/v20.10.0/lib/node_modules/node-gyp/addon.gypi -I/home/bathan1/.cache/node-gyp/20.10.0/include/node/common.gypi "--toplevel-dir=." binding.gyp
-Makefile: $(srcdir)/../../../.nvm/versions/node/v20.10.0/lib/node_modules/node-gyp/addon.gypi $(srcdir)/../../../.cache/node-gyp/20.10.0/include/node/common.gypi $(srcdir)/binding.gyp $(srcdir)/build/config.gypi
+Makefile: $(srcdir)/../../../.nvm/versions/node/v20.10.0/lib/node_modules/node-gyp/addon.gypi $(srcdir)/binding.gyp $(srcdir)/../../../.cache/node-gyp/20.10.0/include/node/common.gypi $(srcdir)/build/config.gypi
 	$(call do_cmd,regen_makefile)
 
 # "all" is a concatenation of the "all" targets from all the included
