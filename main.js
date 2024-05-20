@@ -2,6 +2,7 @@ const startSimulation = require("./binding/lib/binding.js");
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
+const axios = require("axios");
 
 const app = express();
 app.use(express.json());
@@ -10,8 +11,20 @@ app.use(express.static(path.join(__dirname, "client/dist")));
 
 app.use(cors());
 
-app.get("*", (req, res) => {
-    return res.sendFile(path.join(__dirname, "client/dist", "index.html"));
+app.get("/cat", async (req, res) => {
+    const response = await axios.get("https://api.thecatapi.com/v1/images/search", {
+        headers: {
+            "x-api-key": process.env.CAT_API_KEY
+        }
+    });
+    const payload = response.data;
+    if (!payload) {
+        return res.status(500).json({
+            error: "Internal Server Error",
+            message: "The cat picture could not be queried right now :("
+        });
+    }
+    return res.status(200).json({ image: payload[0] });
 });
 
 app.post("/simulation", (req, res) => {

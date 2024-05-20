@@ -14,19 +14,60 @@ const generateNodes = (numNodes: number, faultyNodes: Set<number>): Node[] => {
     const radius = 500;
     const centerX = 0;
     const centerY = 0;
-    return Array.from({ length: numNodes }, (_, i) => {
+    const nodes: Node[] = [];
+    for (let i = 0; i < numNodes; i++) {
         const angle = (i / numNodes) * 2 * Math.PI;
         const x = centerX + radius * Math.cos(angle) * -1;
         const y = centerY + radius * Math.sin(angle) * -1;
         const isFaulty = faultyNodes.has(i);
-        return {
+        nodes.push({
             id: `${i}`,
             type: "default",
             position: { x, y },
-            data: { label: `Node ${i}` },
+            data: { label: `Node ${i} ${i === 0 ? "(you)" : ""}` },
             style: { backgroundColor: isFaulty ? "red" : "green" }
-        };
-    });
+        });
+        
+        let genesisXPos;
+        if (x < 0) {
+            genesisXPos = x - 500;
+        } else {
+            console.log("node", i);
+            genesisXPos = x + 500;
+        } 
+        nodes.push({
+            id: `genesis-${i}`,
+            type: "default",
+            position: { x: genesisXPos, y },
+            data: { label: `Genesis Block Node ${i}`, imageUrl: "" }
+        });
+
+        for (let j = 1; j < 4; j++) {
+            let imageUrl = "";
+            if (j === 1) {
+                imageUrl = "https://cdn2.thecatapi.com/images/9u8.jpg";
+            } else if (j === 2) {
+                imageUrl = "https://cdn2.thecatapi.com/images/buk.jpg";
+            } else {
+                imageUrl = "https://cdn2.thecatapi.com/images/c4t.jpg";
+            }
+            
+            let xPosition;
+            if (x < 0) {
+                xPosition = x - 500;
+            } else {
+                xPosition = x + 500;
+            }
+
+            nodes.push({
+                id: `block-${i}-${j}`,
+                type: "default",
+                position: { x: xPosition, y: y + (50 * j) },
+                data: { label: `Block ${j}`, imageUrl }
+            });
+        }
+    }
+    return nodes;
 };
 
 const selectRandomFaultyNodes = (numNodes: number, numFaulty: number) => {
@@ -46,7 +87,7 @@ function createEdgeFromLog(log: LogEntry, index: number): Edge {
         target: `${log.receiverId}`,
         label: log.messageType,
         animated: true,
-        style: { stroke: log.messageType === 'PRE_PREPARE' ? 'blue' : log.messageType === 'PREPARE' ? 'orange' : 'purple' }
+        style: { stroke: log.messageType === 'PRE_PREPARE' ? 'blue' : log.messageType === 'PREPARE' ? 'orange' : 'purple' },
     }
 }
 
@@ -93,7 +134,6 @@ function App() {
         const newMaxFaulty = Math.floor((numberOfNodes - 1) / 3);
         setNumFaulty(Math.min(numFaulty, newMaxFaulty));
     }
-
 
     async function handleSubmit(e: FormEvent) {
         e.preventDefault();

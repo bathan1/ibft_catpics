@@ -6,6 +6,7 @@
 #include <iostream>
 #include <openssl/evp.h>
 #include <pthread.h>
+#include <sstream>
 #include <unordered_map>
 
 struct WorkerArgs {
@@ -60,7 +61,25 @@ Napi::Array start_simulation(const Napi::CallbackInfo &info) {
     std::vector<pthread_t> threads(n);
     std::vector<WorkerArgs *> worker_args(n);
 
+    // Setup the blockchain
     Blockchain bc("meow");
+    std::unordered_map<int, std::string> index_to_cat;
+    std::stringstream ss;
+    // Cat picture 1
+    ss << "9u8" << "|" << "https://cdn2.thecatapi.com/images/9u8.jpg" << "|" << "480" << "|" << "640"; 
+    std::string serialized1 = ss.str();
+    ss.clear();
+    // Cat picture 2
+    ss << "buk" << "|" << "https://cdn2.thecatapi.com/images/buk.jpg" << "|" << "640" << "|" << "591";
+    std::string serialized2 = ss.str();
+    ss.clear();
+    // Cat picture 3
+    ss << "c4t" << "|" << "https://cdn2.thecatapi.com/images/c4t.jpg" << "|" << "598" << "|" << "498";
+    std::string serialized3 = ss.str();
+    index_to_cat[0] = serialized1;
+    index_to_cat[1] = serialized2;
+    index_to_cat[2] = serialized3;
+    
     Log log;
     for (int i = 0; i < n; i++) {
         Node *node = new Node(i, bc, n, &log);
@@ -69,6 +88,26 @@ Napi::Array start_simulation(const Napi::CallbackInfo &info) {
         public_keys[i] = pubkey;
         node->private_key = privkey;
     }
+
+    std::vector<Block> existing;
+    // Pick 3 random nodes to make the transactions
+    for (int i = 0; i < 3; i++) {
+        int random = rand() % network.size();
+        Transaction tx(random, random, 0, index_to_cat[i]);
+        tx.sign(network[i]->private_key);
+        Block b(bc.chain.size(), {tx}, bc.chain[bc.chain.size() - 1].hash);
+        std::string block_hash = calculate_sha256(b.to_string());
+        b.assign_hash(block_hash);
+        existing.push_back(b);
+    }
+    for (const auto &block : existing) {
+        bc.add_block(block);
+    }
+    for (size_t i = 0; i < network.size(); i++) {
+        network[i]->blockchain = bc;
+    }
+
+    std::cout << "Last hash is " << bc.chain[bc.chain.size() - 1].hash << std::endl;
 
     for (int i = 0; i < actual_faulty; i++) {
         int random = rand() % network.size();
@@ -83,10 +122,10 @@ Napi::Array start_simulation(const Napi::CallbackInfo &info) {
     }
 
     Node *node = network[0];
-    std::string hash = info[2].As<Napi::String>();
-    Transaction t1(0, 0, 0, hash);
+    std::string data = info[2].As<Napi::String>();
+    Transaction t1(0, 0, 0, data);
     t1.sign(node->private_key);
-    Block proposed(bc.chain.size(), {t1}, bc.chain[0].hash);
+    Block proposed(bc.chain.size(), {t1}, bc.chain[bc.chain.size() - 1].hash);
 
     for (int i = 0; i < n; i++) {
         WorkerArgs *args = new WorkerArgs();
