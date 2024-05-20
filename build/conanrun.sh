@@ -1,0 +1,1 @@
+. "/home/bathan1/dev/ibft_catpics/build/conanrunenv-debug-x86_64.sh"
