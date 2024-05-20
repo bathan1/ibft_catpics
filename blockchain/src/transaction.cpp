@@ -2,8 +2,7 @@
 #include "crypto_utils.h"
 #include <sstream>
 
-Transaction::Transaction(int from, int to, double amt, std::string data): sender(from), recipient(to), amount(amt), payload(data), verified(false) { 
-}
+Transaction::Transaction(int from, int to, double amt, std::string data): sender(from), recipient(to), amount(amt), payload(data), verified(false) { }
 
 void Transaction::sign(EVP_PKEY *priv_key) {
     std::string serialized = to_string();

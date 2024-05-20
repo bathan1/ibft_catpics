@@ -23,6 +23,7 @@ public:
 
     Node(int pid, const Blockchain &bc, int max_faulty);
     Node(int pid, const Blockchain &bc, int max_faulty, int num_nodes);
+    Node(int pid, const Blockchain &bc, int max_faulty, int num_nodes, bool faulty);
     Node(int pid, const Blockchain &bc, int max_faulty, int num_nodes, int timer_constant);
     ~Node();
     void broadcast(const Message &msg) const;
@@ -38,6 +39,7 @@ public:
     Block pv;
     Block input_value;
     TimerState timer;
+    bool faulty;
 
     void decide(const Block &block);
     int leader(int lambda, int r_i);
@@ -46,6 +48,7 @@ public:
     bool check_expired();
     bool justify_round_change();
     bool validate_message(const Message &msg);
+    bool verify_transaction(const Transaction &tx) const;
     std::unordered_map<int, int> round_stage;
 
 private:

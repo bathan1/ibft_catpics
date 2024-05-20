@@ -36,17 +36,24 @@ void *worker(void *arg) {
 }
 
 int main(int argc, char **argv) {
-    if (argc != 2) {
-        std::cout << "Usage:" << " " << argv[0] << " " << "<number_of_nodes>" << std::endl;
+    if (argc != 3) {
+        std::cout << "Usage:" << " " << argv[0] << " " << "<number_of_nodes>" << " " << "<number_of_faulty>" << std::endl;
         return 1;
     }
     // ibft can tolerate up to 3f + 1 faulty nodes
     int n = std::atoi(argv[1]);
     int f = (n - 1) / 3;
+    int actual_f = std::atoi(argv[2]);
 
+    std::srand(std::time(nullptr));
     std::cout << "n=" << n << "\n";
     std::cout << "f=" << f << "\n";
-    std::cout << "quorum=" << ((n + f) / 2) + 1 << "\n";
+    std::cout << "actual number of faulty " << actual_f << "\n";
+    std::cout << "quorum=" << 2 * f + 1 << "\n";
+    if (actual_f > f) {
+        std::cout << "Max number of faulty is " << f << " please enter a valid number of faulty nodes\n";
+        return 0;
+    }
 
     // Initialize the blockchain
     Blockchain bc("meow");
@@ -58,13 +65,23 @@ int main(int argc, char **argv) {
 
     // Initialize the n nodes
     for (int i = 0; i < n; i++) {
-        Node *node = new Node(i, bc, f);
-        node->n = n;
+        Node *node = new Node(i, bc, f, n, false);
         network.push_back(node);
         auto [pubkey, privkey] = generate_RSA_keypair();
         public_keys[i] = pubkey;
         node->private_key = privkey;
     }
+
+    int num_faulty = 0; 
+    // Initialize faulty nodes
+    for (int i = 0; i < actual_f; i++) {
+        int random = rand() % network.size();
+        while (network[random]->faulty)
+            random = rand() % network.size();
+        network[random]->faulty = true;
+        std::cout << "Initialized node " << random << " as faulty!\n";
+    }
+    
     // Then add the network to each node
     for (int i = 0; i < n; i++) {
         network[i]->network = network;
@@ -72,7 +89,9 @@ int main(int argc, char **argv) {
     }
 
     Node *leader = network[0];
-    Block proposed(bc.chain.size(), {}, bc.chain[0].hash);
+    Transaction t1(0, 0, 0, "meoww");
+    t1.sign(leader->private_key);
+    Block proposed(bc.chain.size(), {t1}, bc.chain[0].hash);
 
     for (int i = 0; i < n; i++) {
         WorkerArgs *args = new WorkerArgs();

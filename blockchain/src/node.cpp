@@ -4,11 +4,13 @@
 #include <iostream>
 #include <pthread.h>
 #include <queue>
-#include <thread>
 
-Node::Node(int pid, const Blockchain &bc, int max_faulty): pi(pid), blockchain(bc), f(max_faulty), timer(STOPPED), t0(1), n((3 * max_faulty) + 1) {}
+Node::Node(int pid, const Blockchain &bc, int max_faulty): pi(pid), blockchain(bc), f(max_faulty), timer(STOPPED), t0(1), n((3 * max_faulty) + 1), faulty(false) {}
 
-Node::Node(int pid, const Blockchain &bc, int max_faulty, int num_nodes): pi(pid), blockchain(bc), f(max_faulty), n(num_nodes), timer(STOPPED), t0(1) {}
+Node::Node(int pid, const Blockchain &bc, int max_faulty, int num_nodes): pi(pid), blockchain(bc), f(max_faulty), n(num_nodes), timer(STOPPED), t0(1), faulty(false) {}
+
+Node::Node(int pid, const Blockchain &bc, int max_faulty, int num_nodes, bool faulty): pi(pid), blockchain(bc), f(max_faulty), n(num_nodes), timer(STOPPED), t0(1), faulty(faulty) {}
+
 
 Node::Node(int pid, const Blockchain &bc, int max_faulty, int num_nodes, int timer_constant): pi(pid), blockchain(bc), f(max_faulty), n(num_nodes), timer(STOPPED), t0(timer_constant) {}
 
@@ -49,16 +51,33 @@ void Node::sign_message(Message &msg) const {
 
 bool Node::verify_message(const Message &msg) const {
     std::string hash = compute_hash(msg.to_string());
-    return verify_signature(hash, msg.signature, msg.sender);
+    bool valid_sender = verify_signature(hash, msg.signature, msg.sender);
+    if (!valid_sender)
+        return false;
+    for (const auto &tx : msg.value.transactions) {
+        bool valid = verify_transaction(tx);
+        if (!valid) {
+            std::cout << "failed to validate a transaction" << std::endl;
+            return false;
+        }
+    }
+    return true;
+}
+
+bool Node::verify_transaction(const Transaction &tx) const {
+    std::string hash = calculate_sha256(tx.to_string());
+    int sender = tx.sender;
+    EVP_PKEY *pubkey = public_keys.at(sender);
+    if (!pubkey)
+        return false;
+    return verify(hash, tx.signature, pubkey);
 }
 
 bool Node::has_quorum(int ri, MessageType msgtyp) {
-    if (msgtyp == PREPARE) {
-        return valid_prepare_msgs[ri].size() >= ((n + f) / 2) + 1;
-    }  
-    if (msgtyp == COMMIT) {
-        return valid_commit_count[ri] >= ((n + f) / 2) + 1;
-    }
+    if (msgtyp == PREPARE)
+        return valid_prepare_msgs[ri].size() >= 2 * f + 1;
+    if (msgtyp == COMMIT)
+        return valid_commit_count[ri] >= 2 * f + 1;
     return false;
 }
 
@@ -110,28 +129,31 @@ int Node::receive(const Message &msg) {
         case PRE_PREPARE:
             if (valid_msg && justify_preprepare(msg)) {
                 Message prepare(PREPARE, msg.consensus_number, msg.round, msg.value, this->pi);
-                this->sign_message(prepare);
+                if (!faulty) {
+                    this->sign_message(prepare);
+                }
                 this->set_timer(RUNNING, msg.round);
                 this->broadcast(prepare);
                 this->round_stage[msg.round] = 1;
                 return 1;
             }
             return 0;
-
         case PREPARE:
             if (valid_msg)
+                std::cout << pi << " got a valid message from " << msg.sender << "\n";
                 this->valid_prepare_msgs[msg.round].push_back(msg);
             if (this->round_stage[msg.round] == 1 && has_quorum(msg.round, PREPARE)) {
                 this->pr = msg.round;
                 this->pv = msg.value;
                 Message commit(COMMIT, msg.consensus_number, msg.round, msg.value, this->pi);
                 this->round_stage[msg.round] = 2;
-                this->sign_message(commit);
+                if (!faulty) {
+                    this->sign_message(commit);
+                }
                 this->broadcast(commit);
                 return 2;
             } 
             return 1;
-
         case COMMIT:
             if (valid_msg)
                 this->valid_commit_count[msg.round]++;
