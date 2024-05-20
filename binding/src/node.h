@@ -35,6 +35,7 @@ public:
     int t0;
     TimerState timer;
 
+    int leader();
     void broadcast(const Message &msg) const;
     int receive(const Message &msg);
     void run();
@@ -51,7 +52,6 @@ public:
     std::unordered_map<int, int> round_stage;
 
 private:
-    int leader();
     void handle_timeout();
     void set_expiration(int ri);
     std::chrono::seconds t(int ri) const;

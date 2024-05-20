@@ -4,6 +4,7 @@
 #include "blockchain.h"
 #include "node.h"
 #include <iostream>
+#include <openssl/evp.h>
 #include <pthread.h>
 #include <unordered_map>
 
@@ -12,6 +13,16 @@ struct WorkerArgs {
     size_t lambda;
     Block *value;
 };
+
+void *worker(void *arg) {
+    WorkerArgs *args = static_cast<WorkerArgs *>(arg);
+    Node *node = args->node;
+    node->lambda = args->lambda;
+    node->r = 1;
+    node->input_value = *(args->value);
+    node->run();
+    return nullptr;
+}
 
 void start_simulation(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
@@ -63,6 +74,41 @@ void start_simulation(const Napi::CallbackInfo &info) {
         network[i]->network = network;
         network[i]->public_keys = public_keys;
     }
+
+    Node *leader = network[0];
+    Transaction t1(0, 0, 0, "meoww");
+    t1.sign(leader->private_key);
+    Block proposed(bc.chain.size(), {t1}, bc.chain[0].hash);
+
+    for (int i = 0; i < n; i++) {
+        WorkerArgs *args = new WorkerArgs();
+        *(args) = { network[i], bc.chain.size(), &proposed };
+        worker_args.push_back(args);
+        pthread_create(&threads[i], nullptr, worker, args);
+    }
+    
+    for (int i = 0; i < n; i++) {
+        pthread_join(threads[i], nullptr);
+    }
+
+    int numstopped = 0;
+    for (int i = 0; i < n; i++) {
+        if (network[i]->timer == STOPPED) {
+            numstopped++;
+        }
+    }
+    std::cout << "num_stopped=" << numstopped << std::endl;
+
+    // cleanup
+    for (int i = 0; i < worker_args.size(); i++)
+        delete worker_args[i];
+    for (auto &pair : public_keys)
+        EVP_PKEY_free(pair.second);
+    for (int i = 0; i < network.size(); i++) {
+        EVP_PKEY_free(network[i]->private_key);
+        delete network[i];
+    }
+    std::cout << "here!" << std::endl;
 }
 
 Napi::Object Init(Napi::Env env, Napi::Object exports) {

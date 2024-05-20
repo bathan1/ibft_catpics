@@ -191,6 +191,8 @@ std::chrono::seconds Node::t(int ri) const {
 }
 
 bool Node::check_expired() {
+    if (timer == STOPPED)
+        return false;
     return std::chrono::steady_clock::now() >= this->expiration_time;
 }
 
@@ -207,10 +209,17 @@ int Node::leader() {
 }
 
 void Node::run() {
+    if (leader() == pi) {
+        Message preprepare(PRE_PREPARE, lambda, r, input_value, pi);
+        sign_message(preprepare);
+        broadcast(preprepare);
+        round_stage[1] = 1;
+        set_timer(RUNNING, r);
+    }
+
     while (true) {
         bool expired = this->check_expired();
         if (expired) {
-            std::cout << "node " << pi << " timed out" << std::endl;
             handle_timeout();
         }
         pthread_mutex_lock(&queue_mutex);
