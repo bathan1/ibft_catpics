@@ -58,7 +58,7 @@ function App() {
 
     async function handleSubmit(e: FormEvent) {
         e.preventDefault();
-        const response = await fetch("/simulation", {
+        const response = await fetch("http://localhost:3000/simulation", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
@@ -69,11 +69,13 @@ function App() {
                 data
             })
         });
+        const payload = await response.json();
+        console.log(payload);
     }
 
     return (
         <div className="p-6 w-screen h-screen flex">
-            <form className="p-6">
+            <form className="p-6" onSubmit={handleSubmit}>
                 <label htmlFor="numnodes" className="block mb-4">
                     Number of nodes (n) (minimum 4, max 10): <strong>{numNodes}</strong>
                     <input 

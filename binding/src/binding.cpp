@@ -107,11 +107,11 @@ Napi::Array start_simulation(const Napi::CallbackInfo &info) {
     }
     std::cout << "num_stopped=" << numstopped << std::endl;
     // cleanup
-    for (int i = 0; i < worker_args.size(); i++)
+    for (size_t i = 0; i < worker_args.size(); i++)
         delete worker_args[i];
     for (auto &pair : public_keys)
         EVP_PKEY_free(pair.second);
-    for (int i = 0; i < network.size(); i++) {
+    for (size_t i = 0; i < network.size(); i++) {
         EVP_PKEY_free(network[i]->private_key);
         delete network[i];
     }
