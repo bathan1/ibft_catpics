@@ -16,8 +16,8 @@ const generateNodes = (numNodes: number, faultyNodes: Set<number>): Node[] => {
     const centerY = 0;
     return Array.from({ length: numNodes }, (_, i) => {
         const angle = (i / numNodes) * 2 * Math.PI;
-        const x = centerX + radius * Math.cos(angle);
-        const y = centerY + radius * Math.sin(angle);
+        const x = centerX + radius * Math.cos(angle) * -1;
+        const y = centerY + radius * Math.sin(angle) * -1;
         const isFaulty = faultyNodes.has(i);
         return {
             id: `${i}`,
@@ -39,15 +39,15 @@ const selectRandomFaultyNodes = (numNodes: number, numFaulty: number) => {
     return faultyNodes;
 }
 
-function createEdgesFromLogs(logData: LogEntry[]): Edge[] {
-    return logData.map((log, index) => ({
+function createEdgeFromLog(log: LogEntry, index: number): Edge {
+    return {
         id: `e${log.senderId}-${log.receiverId}-${index}`,
         source: `${log.senderId}`,
         target: `${log.receiverId}`,
         label: log.messageType,
         animated: true,
-        style: { stroke: log.messageType === "PRE_PREPARE" ? "blue" : log.messageType === "PREPARE" ? "orange" : "purples"}
-    }));
+        style: { stroke: log.messageType === 'PRE_PREPARE' ? 'blue' : log.messageType === 'PREPARE' ? 'orange' : 'purple' }
+    }
 }
 
 function App() {
@@ -56,11 +56,30 @@ function App() {
     const [data, setData] = useState("");
     const [nodes, setNodes] = useState<Node[]>(generateNodes(numNodes, new Set()));
     const [edges, setEdges] = useState<Edge[]>([]);
+    const [logData, setLogData] = useState<LogEntry[]>([]);
+    const [currentLogIndex, setCurrentLogIndex] = useState(0);
 
     useEffect(() => {
         const faultyNodes = selectRandomFaultyNodes(numNodes, numFaulty);
         setNodes(generateNodes(numNodes, faultyNodes));
     }, [numNodes, numFaulty]);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setEdges((prevEdges) => {
+                if (currentLogIndex < logData.length) {
+                    const newEdge = createEdgeFromLog(logData[currentLogIndex], currentLogIndex);
+                    setCurrentLogIndex((prevIndex) => prevIndex + 1);
+                    return [...prevEdges, newEdge];
+                } else {
+                    clearInterval(interval);
+                    return prevEdges;
+                }
+            });
+        }, 500);
+
+        return () => clearInterval(interval);
+    }, [currentLogIndex, logData]);
 
     function stop(e: React.DragEvent<HTMLInputElement>) {
         e.preventDefault();
@@ -90,8 +109,7 @@ function App() {
             })
         });
         const payload = await response.json();
-        const edges = createEdgesFromLogs(payload.log);
-        setEdges(edges);
+        setLogData(payload.log);
     }
 
     return (
