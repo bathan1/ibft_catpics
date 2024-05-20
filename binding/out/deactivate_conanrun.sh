@@ -1,0 +1,1 @@
+. "/home/bathan1/dev/ibft_catpics/binding/out/deactivate_conanrunenv-debug-x86_64.sh"

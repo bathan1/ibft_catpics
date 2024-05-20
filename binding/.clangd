@@ -1,0 +1,5 @@
+CompileFlags:
+  Add: [
+    -I../node_modules/.pnpm/node-addon-api@8.0.0/node_modules/node-addon-api,
+    -I../node_modules/.pnpm/node-api-headers@1.1.0/node_modules/node-api-headers/include
+  ]
