@@ -63,7 +63,7 @@ bool Node::verify_message(const Message &msg) const {
     for (const auto &tx : msg.value.transactions) {
         bool valid = verify_transaction(tx);
         if (!valid) {
-            std::cout << "Node" << " " << this->pi << "failed to validate a transaction" << std::endl;
+            std::cout << "Node" << " " << this->pi << " failed to validate a transaction" << std::endl;
             return false;
         }
     }

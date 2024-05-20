@@ -5,12 +5,11 @@ const app = express();
 app.use(express.json());
 const port = 3000;
 
-app.get("/", (req, res) => {
+app.post("/simulation", (req, res) => {
+    const { numNodes, numFaulty, hash } = req.body;
     try {
-        startSimulation(5, 0, "lol");
-        return res.status(200).json({
-            lol: "lol"
-        });
+        const log = startSimulation(numNodes, numFaulty, hash);
+        return res.status(200).json({ log });
     } catch (err) {
         return res.status(500).send(err.message);
     }

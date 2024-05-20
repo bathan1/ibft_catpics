@@ -24,37 +24,39 @@ void *worker(void *arg) {
     return nullptr;
 }
 
-void start_simulation(const Napi::CallbackInfo &info) {
+Napi::Array start_simulation(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
     if (info.Length() < 3) {
         Napi::TypeError::New(env, "Three arguments expected").ThrowAsJavaScriptException();
-        return;
+        return {};
     }
     if (!info[0].IsNumber() || !info[1].IsNumber()) {
         Napi::TypeError::New(env, "Number arguments for arg1 and arg2 expected").ThrowAsJavaScriptException();
-        return;
+        return {};
     }
 
     if (!info[2].IsString()) {
         Napi::TypeError::New(env, "String argument for arg3 expected").ThrowAsJavaScriptException();
-        return;
+        return {};
     }
-
-    std::string initial_data = info[2].As<Napi::String>();
-    Blockchain bc(initial_data);
 
     int n = info[0].As<Napi::Number>().Int64Value();
     int f = (n - 1) / 3;
     int actual_faulty = info[1].As<Napi::Number>().Int64Value();
     if (actual_faulty > f) {
         Napi::Error::New(env, "Can't assign actual_faulty > f").ThrowAsJavaScriptException();
-        return;
+        return {};
     }
+    std::cout << "n=" << n << std::endl;
+    std::cout << "f=" << f << std::endl;
+    std::cout << "actual_faulty=" << actual_faulty << std::endl;
+
     std::unordered_map<int, EVP_PKEY *> public_keys;
     std::vector<Node *> network;
     std::vector<pthread_t> threads(n);
     std::vector<WorkerArgs *> worker_args(n);
 
+    Blockchain bc("meow");
     Log log;
     for (int i = 0; i < n; i++) {
         Node *node = new Node(i, bc, n, &log);
@@ -70,15 +72,16 @@ void start_simulation(const Napi::CallbackInfo &info) {
             random = rand() % network.size();
         network[random]->faulty = true;
     }
-
+    
     for (int i = 0; i < n; i++) {
         network[i]->network = network;
         network[i]->public_keys = public_keys;
     }
 
-    Node *leader = network[0];
-    Transaction t1(0, 0, 0, "meoww");
-    t1.sign(leader->private_key);
+    Node *node = network[0];
+    std::string hash = info[2].As<Napi::String>();
+    Transaction t1(0, 0, 0, hash);
+    t1.sign(node->private_key);
     Block proposed(bc.chain.size(), {t1}, bc.chain[0].hash);
 
     for (int i = 0; i < n; i++) {
@@ -99,7 +102,6 @@ void start_simulation(const Napi::CallbackInfo &info) {
         }
     }
     std::cout << "num_stopped=" << numstopped << std::endl;
-
     // cleanup
     for (int i = 0; i < worker_args.size(); i++)
         delete worker_args[i];
@@ -109,7 +111,17 @@ void start_simulation(const Napi::CallbackInfo &info) {
         EVP_PKEY_free(network[i]->private_key);
         delete network[i];
     }
-    std::cout << "here!" << std::endl;
+
+    Napi::Array log_array = Napi::Array::New(env, log.entries.size());
+    for (size_t i = 0; i < log.entries.size(); i++) {
+        Napi::Object log_obj = Napi::Object::New(env);
+        log_obj.Set("messageType", log.entries[i].message_type);
+        log_obj.Set("round", log.entries[i].round);
+        log_obj.Set("senderId", log.entries[i].sender_id);
+        log_obj.Set("receiverId", log.entries[i].receiver_id);
+        log_array[i] = log_obj;
+    }
+    return log_array;
 }
 
 Napi::Object Init(Napi::Env env, Napi::Object exports) {

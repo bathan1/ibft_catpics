@@ -76,9 +76,9 @@ int main(int argc, char **argv) {
         network[i]->public_keys = public_keys;
     }
 
-    Node *leader = network[0];
+    Node *transactor = network[0];
     Transaction t1(0, 0, 0, "meoww");
-    t1.sign(leader->private_key);
+    t1.sign(transactor->private_key);
     Block proposed(bc.chain.size(), {t1}, bc.chain[0].hash);
 
     for (int i = 0; i < n; i++) {
