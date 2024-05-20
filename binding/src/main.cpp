@@ -91,7 +91,6 @@ int main(int argc, char **argv) {
     for (int i = 0; i < n; i++) {
         pthread_join(threads[i], nullptr);
     }
-    pthread_mutex_destroy(&log.mutex);
 
     int numstopped = 0;
     for (int i = 0; i < n; i++) {

@@ -55,8 +55,9 @@ void start_simulation(const Napi::CallbackInfo &info) {
     std::vector<pthread_t> threads(n);
     std::vector<WorkerArgs *> worker_args(n);
 
+    Log log;
     for (int i = 0; i < n; i++) {
-        Node *node = new Node(i, bc, n);
+        Node *node = new Node(i, bc, n, &log);
         network.push_back(node);
         auto [pubkey, privkey] = generate_RSA_keypair();
         public_keys[i] = pubkey;
