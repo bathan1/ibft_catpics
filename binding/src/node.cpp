@@ -5,7 +5,8 @@
 #include <pthread.h>
 #include <queue>
 
-Node::Node(int pid, const Blockchain &bc, int num_nodes): 
+Node::Node(int pid, const Blockchain &bc, int num_nodes, Log *log):
+    log(log),
     blockchain(bc),
     pi(pid), 
     n(num_nodes),
@@ -116,10 +117,37 @@ void Node::handle_skip_round(int r_min) {
 
 void Node::decide(const Block &block) {
     this->blockchain.add_block(block);
-    std::cout << "Node " << pi << " just added the block to its blockchain!" << std::endl;
+}
+
+void Node::log_entry(const Message &msg) {
+    std::string message_type;
+    switch (msg.type) {
+        case ROUND_CHANGE:
+            message_type = "ROUND_CHANGE";
+            break;
+        case PRE_PREPARE:
+            message_type = "PRE_PREPARE";
+            break;
+        case PREPARE:
+            message_type = "PREPARE";
+            break;
+        case COMMIT:
+            message_type = "COMMIT";
+            break;
+    }
+    LogEntry entry = {
+        message_type,
+        msg.round,
+        msg.sender,
+        this->pi
+    };
+    pthread_mutex_lock(&log->mutex);
+    log->entries.push_back(entry);
+    pthread_mutex_unlock(&log->mutex);
 }
 
 int Node::receive(const Message &msg) {
+    log_entry(msg);
     bool valid_msg = verify_message(msg);
     switch (msg.type) {
         case ROUND_CHANGE:

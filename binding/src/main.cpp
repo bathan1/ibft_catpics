@@ -51,9 +51,11 @@ int main(int argc, char **argv) {
     std::vector<pthread_t> threads(n);
     std::vector<WorkerArgs *> worker_args(n);
 
+    Log log;
+
     // Initialize the n nodes
     for (int i = 0; i < n; i++) {
-        Node *node = new Node(i, bc, n);
+        Node *node = new Node(i, bc, n, &log);
         network.push_back(node);
         auto [pubkey, privkey] = generate_RSA_keypair();
         public_keys[i] = pubkey;
@@ -89,6 +91,7 @@ int main(int argc, char **argv) {
     for (int i = 0; i < n; i++) {
         pthread_join(threads[i], nullptr);
     }
+    pthread_mutex_destroy(&log.mutex);
 
     int numstopped = 0;
     for (int i = 0; i < n; i++) {
@@ -97,6 +100,9 @@ int main(int argc, char **argv) {
         }
     }
     std::cout << "num_stopped=" << numstopped << std::endl;
+    for (const auto &entry : log.entries) {
+        std::cout << entry.message_type << std::endl;
+    }
 
     // cleanup
     for (int i = 0; i < worker_args.size(); i++)

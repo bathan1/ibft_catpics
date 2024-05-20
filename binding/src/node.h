@@ -1,6 +1,7 @@
 #include "blockchain.h"
 #include "message.h"
 #include <queue>
+#include <stdexcept>
 #include <unordered_map>
 #include <vector>
 
@@ -10,18 +11,42 @@ enum TimerState {
     EXPIRED
 };
 
+struct LogEntry {
+    std::string message_type;
+    int round;
+    int sender_id;
+    int receiver_id;
+};
+
+class Log {
+public:
+    Log() {
+        if (pthread_mutex_init(&mutex, nullptr) != 0) {
+            throw std::runtime_error("Failed to initialize mutex for the log");
+        }
+    }
+    ~Log() {
+        pthread_mutex_destroy(&mutex);
+    }
+    std::vector<LogEntry> entries;
+    pthread_mutex_t mutex;
+};
+
 class Node {
 public:
-    Node(int pid, const Blockchain &bc, int num_nodes);
+    Node(int pid, const Blockchain &bc, int num_nodes, Log *log);
     ~Node();
 
+    Log *log;
     Blockchain blockchain;
-    std::vector<Node *> network;
     EVP_PKEY *private_key;
+    std::vector<Node *> network;
     std::unordered_map<int, EVP_PKEY *> public_keys;
     std::queue<Message> message_queue;
+    std::unordered_map<int, int> round_stage;
+
     mutable pthread_mutex_t queue_mutex = PTHREAD_MUTEX_INITIALIZER;
-    pthread_cond_t queue_cond = PTHREAD_COND_INITIALIZER;
+    mutable pthread_cond_t queue_cond = PTHREAD_COND_INITIALIZER;
 
     int pi;
     int n;
@@ -49,17 +74,18 @@ public:
     bool justify_round_change();
     bool validate_message(const Message &msg);
     bool verify_transaction(const Transaction &tx) const;
-    std::unordered_map<int, int> round_stage;
+    void log_entry(const Message &msg);
 
 private:
-    void handle_timeout();
-    void set_expiration(int ri);
-    std::chrono::seconds t(int ri) const;
     std::chrono::steady_clock::time_point expiration_time;
     std::unordered_map<int, std::vector<Message>> valid_prepare_msgs;
     std::unordered_map<int, int> valid_commit_count;
     std::unordered_map<int, std::vector<Message>> valid_roundchange_msgs;
     std::unordered_map<int, int> valid_roundchange_count;
+
+    void handle_timeout();
+    void set_expiration(int ri);
+    std::chrono::seconds t(int ri) const;
     std::string compute_hash(const std::string &data) const;
     bool has_quorum(int ri, MessageType msgtyp);
     int check_skip_round() const;
