@@ -47,6 +47,10 @@ Napi::Array start_simulation(const Napi::CallbackInfo &info) {
         Napi::Error::New(env, "Can't assign actual_faulty > f").ThrowAsJavaScriptException();
         return {};
     }
+    if (n > 10) {
+        Napi::Error::New(env, "This simulation only supports 10 threads :(").ThrowAsJavaScriptException();
+        return {};
+    }
     std::cout << "n=" << n << std::endl;
     std::cout << "f=" << f << std::endl;
     std::cout << "actual_faulty=" << actual_faulty << std::endl;

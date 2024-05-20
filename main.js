@@ -1,4 +1,4 @@
-const startSimulation = require("../binding/lib/binding.js");
+const startSimulation = require("./binding/lib/binding.js");
 const express = require("express");
 
 const app = express();
