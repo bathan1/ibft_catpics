@@ -1,4 +1,4 @@
-import ReactFlow, { Edge, Node } from "reactflow";
+import ReactFlow, { Edge, MarkerType, Node } from "reactflow";
 import { useState, useEffect, FormEvent } from "react";
 import "reactflow/dist/style.css";
 import './App.css';
@@ -27,45 +27,6 @@ const generateNodes = (numNodes: number, faultyNodes: Set<number>): Node[] => {
             data: { label: `Node ${i} ${i === 0 ? "(you)" : ""}` },
             style: { backgroundColor: isFaulty ? "red" : "green" }
         });
-        
-        let genesisXPos;
-        if (x < 0) {
-            genesisXPos = x - 500;
-        } else {
-            console.log("node", i);
-            genesisXPos = x + 500;
-        } 
-        nodes.push({
-            id: `genesis-${i}`,
-            type: "default",
-            position: { x: genesisXPos, y },
-            data: { label: `Genesis Block Node ${i}`, imageUrl: "" }
-        });
-
-        for (let j = 1; j < 4; j++) {
-            let imageUrl = "";
-            if (j === 1) {
-                imageUrl = "https://cdn2.thecatapi.com/images/9u8.jpg";
-            } else if (j === 2) {
-                imageUrl = "https://cdn2.thecatapi.com/images/buk.jpg";
-            } else {
-                imageUrl = "https://cdn2.thecatapi.com/images/c4t.jpg";
-            }
-            
-            let xPosition;
-            if (x < 0) {
-                xPosition = x - 500;
-            } else {
-                xPosition = x + 500;
-            }
-
-            nodes.push({
-                id: `block-${i}-${j}`,
-                type: "default",
-                position: { x: xPosition, y: y + (50 * j) },
-                data: { label: `Block ${j}`, imageUrl }
-            });
-        }
     }
     return nodes;
 };
@@ -88,6 +49,7 @@ function createEdgeFromLog(log: LogEntry, index: number): Edge {
         label: log.messageType,
         animated: true,
         style: { stroke: log.messageType === 'PRE_PREPARE' ? 'blue' : log.messageType === 'PREPARE' ? 'orange' : 'purple' },
+        markerEnd: MarkerType.ArrowClosed
     }
 }
 
@@ -109,7 +71,8 @@ function App() {
         const interval = setInterval(() => {
             setEdges((prevEdges) => {
                 if (currentLogIndex < logData.length) {
-                    const newEdge = createEdgeFromLog(logData[currentLogIndex], currentLogIndex);
+                    const log = logData[currentLogIndex];
+                    const newEdge = createEdgeFromLog(log, currentLogIndex);
                     setCurrentLogIndex((prevIndex) => prevIndex + 1);
                     return [...prevEdges, newEdge];
                 } else {
@@ -137,7 +100,7 @@ function App() {
 
     async function handleSubmit(e: FormEvent) {
         e.preventDefault();
-        const response = await fetch("http://localhost:3000/simulation", {
+        const response = await fetch("/simulation", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
@@ -181,7 +144,7 @@ function App() {
                     />
                 </label>
                 <label htmlFor="data" className="block mb-4">
-                    The cat picture you want to own!
+                    The data to add to the blockchain, it can be anything!
                     <input 
                         type="text" 
                         id="data" 

@@ -63,23 +63,6 @@ Napi::Array start_simulation(const Napi::CallbackInfo &info) {
 
     // Setup the blockchain
     Blockchain bc("meow");
-    std::unordered_map<int, std::string> index_to_cat;
-    std::stringstream ss;
-    // Cat picture 1
-    ss << "9u8" << "|" << "https://cdn2.thecatapi.com/images/9u8.jpg" << "|" << "480" << "|" << "640"; 
-    std::string serialized1 = ss.str();
-    ss.clear();
-    // Cat picture 2
-    ss << "buk" << "|" << "https://cdn2.thecatapi.com/images/buk.jpg" << "|" << "640" << "|" << "591";
-    std::string serialized2 = ss.str();
-    ss.clear();
-    // Cat picture 3
-    ss << "c4t" << "|" << "https://cdn2.thecatapi.com/images/c4t.jpg" << "|" << "598" << "|" << "498";
-    std::string serialized3 = ss.str();
-    index_to_cat[0] = serialized1;
-    index_to_cat[1] = serialized2;
-    index_to_cat[2] = serialized3;
-    
     Log log;
     for (int i = 0; i < n; i++) {
         Node *node = new Node(i, bc, n, &log);
@@ -93,7 +76,7 @@ Napi::Array start_simulation(const Napi::CallbackInfo &info) {
     // Pick 3 random nodes to make the transactions
     for (int i = 0; i < 3; i++) {
         int random = rand() % network.size();
-        Transaction tx(random, random, 0, index_to_cat[i]);
+        Transaction tx(random, random, 0, "meow!");
         tx.sign(network[i]->private_key);
         Block b(bc.chain.size(), {tx}, bc.chain[bc.chain.size() - 1].hash);
         std::string block_hash = calculate_sha256(b.to_string());
