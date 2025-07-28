@@ -14,14 +14,23 @@ enum MessageType {
 
 class Message {
 public:
+    /**
+     * Message enum
+     */
     MessageType type;
     int consensus_number;
     int round;
     Block value;
     int prepared_round;
     Block prepared_value;
-    int sender; // The process id of the node that sent the message
-    std::string signature; // The signature of that sender using their private key
+    /**
+     * Process ID of outgoing node
+     */
+    int sender;
+    /**
+     * UTF8 encoded signature
+     */
+    std::string signature;
 
     Message(MessageType typ, int lambda, int r, Block val, int pi);
     Message(MessageType typ, int lambda, int r, int pr, Block pv, int pi);
