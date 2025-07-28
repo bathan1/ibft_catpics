@@ -1,10 +1,7 @@
 FROM node:20
 
-# Install build deps
-
-WORKDIR /app
-
 # Copy everything but ignore node_modules via .dockerignore
+WORKDIR /app
 COPY . .
 
 # 1. Install root deps (if any)
@@ -28,5 +25,5 @@ RUN npm install && npm run build
 
 # 4. Back to root
 WORKDIR /app
-EXPOSE 3000
+EXPOSE 8080
 CMD ["node", "app.js"]

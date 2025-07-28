@@ -22,7 +22,7 @@ app.post("/simulation", zv("json", simulationArgs), async c => {
 });
 
 serve({
-    port: process.env.PORT ?? 3000,
+    port: process.env.PORT ?? 8080,
     fetch: app.fetch
 }, (info) => {
     console.log(`IBFT Simulation running on port: ${info.port}`)
