@@ -4,4 +4,15 @@ app = "ibft-catpics"
     dockerfile = "Dockerfile"
 
 [env]
-  PORT = "3000"
+    PORT = "3000"
+
+[http_service]
+    internal_port = 3000
+    force_https = true
+    auto_stop_machines = "stop"
+    auto_start_machines = true
+    min_machines_running = 0
+    [http_service.concurrency]
+        type = "requests"
+        soft_limit = 200
+        hard_limit = 250
