@@ -8,7 +8,8 @@
     },
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1",
-        "build": "cd binding && pnpm install && npx node-gyp configure && npx node-gyp build && cd ../client && pnpm install && pnpm build"
+        "build": "cd binding && npm install && npx node-gyp configure && npx node-gyp build && cd ../client && npm install && npm build",
+        "start": "node app.js"
     },
     "keywords": [],
     "author": "",
@@ -16,9 +17,6 @@
     "dependencies": {
         "@hono/node-server": "^1.17.1",
         "@hono/zod-validator": "^0.7.2",
-        "axios": "^1.7.1",
-        "cors": "^2.8.5",
-        "express": "^4.19.2",
         "hono": "^4.8.9",
         "zod": "^4.0.10"
     }
