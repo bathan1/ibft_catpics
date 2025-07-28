@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <unordered_map>
 #include <vector>
+#include <pthread.h>
 
 enum TimerState {
     RUNNING,
