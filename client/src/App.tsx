@@ -100,7 +100,7 @@ function App() {
 
     async function handleSubmit(e: FormEvent) {
         e.preventDefault();
-        const response = await fetch("/simulation", {
+        const response = await fetch(`/simulation`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
@@ -116,7 +116,7 @@ function App() {
     }
 
     return (
-        <div className="p-6 w-screen h-screen flex">
+        <div className="flex w-screen h-screen p-6">
             <form className="p-6" onSubmit={handleSubmit}>
                 <label htmlFor="numnodes" className="block mb-4">
                     Number of nodes (n) (minimum 4, max 10): <strong>{numNodes}</strong>
@@ -152,7 +152,7 @@ function App() {
                         onChange={(e) => setData(e.target.value)}
                     />
                 </label>
-                <input type="submit" value="submit" className="border px-2 py-1 rounded-lg"/>
+                <input type="submit" value="submit" className="px-2 py-1 border rounded-lg"/>
             </form>
             <div className="w-full h-full">
                 <ReactFlow nodes={nodes} edges={edges} fitView className="bg-red-100"/>

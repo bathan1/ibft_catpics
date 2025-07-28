@@ -63,7 +63,7 @@ public:
     int leader();
     void broadcast(const Message &msg) const;
     int receive(const Message &msg);
-    void run();
+    void listen();
     void sign_message(Message &msg) const;
     bool verify_message(const Message &msg) const;
     void decide(const Block &block);

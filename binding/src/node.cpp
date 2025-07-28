@@ -236,7 +236,7 @@ int Node::leader() {
     return (lambda + r) % n;
 }
 
-void Node::run() {
+void Node::listen() {
     if (leader() == pi) {
         Message preprepare(PRE_PREPARE, lambda, r, input_value, pi);
         sign_message(preprepare);

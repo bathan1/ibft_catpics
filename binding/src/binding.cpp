@@ -6,7 +6,6 @@
 #include <iostream>
 #include <openssl/evp.h>
 #include <pthread.h>
-#include <sstream>
 #include <unordered_map>
 
 struct WorkerArgs {
@@ -21,7 +20,7 @@ void *worker(void *arg) {
     node->lambda = args->lambda;
     node->r = 1;
     node->input_value = *(args->value);
-    node->run();
+    node->listen();
     return nullptr;
 }
 
@@ -52,9 +51,9 @@ Napi::Array start_simulation(const Napi::CallbackInfo &info) {
         Napi::Error::New(env, "This simulation only supports 10 threads :(").ThrowAsJavaScriptException();
         return {};
     }
-    std::cout << "n=" << n << std::endl;
-    std::cout << "f=" << f << std::endl;
-    std::cout << "actual_faulty=" << actual_faulty << std::endl;
+    std::cout << "n = " << n << std::endl;
+    std::cout << "f = " << f << std::endl;
+    std::cout << "actual_faulty = " << actual_faulty << std::endl;
 
     std::unordered_map<int, EVP_PKEY *> public_keys;
     std::vector<Node *> network;
