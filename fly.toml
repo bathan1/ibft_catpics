@@ -1,16 +1,4 @@
 app = "ibft-catpics"
 
-[env]
-PORT = "3000"  # This tells your app what port to listen on, matches Docker EXPOSE
-
-[[services]]
-  internal_port = 3000
-  protocol = "tcp"
-
-  [[services.ports]]
-    port = 80
-    handlers = ["http"]
-
-  [[services.ports]]
-    port = 443
-    handlers = ["http", "tls"]
+[build]
+    dockerfile = "Dockerfile"
